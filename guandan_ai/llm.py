@@ -11,6 +11,8 @@ from urllib.request import Request, urlopen
 
 from .models import Decision, action_cards, is_pass
 from .policies import TeamPolicy
+from .llm_prompts import (PROMPT_VERSION, CONTROL_TYPES, action_power, build_context,
+                          candidate_detail, system_prompt)
 
 
 @dataclass(frozen=True)
@@ -112,6 +114,15 @@ class LLMPolicy(TeamPolicy):
             index = next((i for i in rows if obs.actions[i][0] == kind), None)
             if index is not None:
                 mandatory.append(index)
+        # Keep low-cost representatives, so coaching can actually choose a
+        # cheap follow or a different opening pattern instead of only top scores.
+        for kind in dict.fromkeys(obs.actions[i][0] for i in rows if not is_pass(obs.actions[i])):
+            same = [i for i in rows if obs.actions[i][0] == kind]
+            cheapest = min(same, key=lambda i: (
+                len(action_cards(obs.actions[i])) if kind in CONTROL_TYPES else 0,
+                action_power(obs.actions[i], obs.trump),
+                action_cards(obs.actions[i]).count("H" + obs.trump)))
+            mandatory.append(cheapest)
         return list(dict.fromkeys(mandatory + rows))[:self.profile.candidates]
 
     def decide(self, obs, budget_ms=12000):
@@ -119,17 +130,16 @@ class LLMPolicy(TeamPolicy):
         indices = self.candidates_for(obs)
         if len(obs.actions) == 1:
             return Decision(0, "唯一合法动作，无需请求模型", search={"provider": self.profile.id,
-                "model": self.profile.model, "request_attempted": False, "skipped": "唯一合法动作"})
-        context = {"seat": obs.seat, "teammate": obs.teammate, "stage": obs.stage, "hand": obs.hand,
-            "trump": obs.trump, "remaining": list(obs.rest), "leader": obs.greater_pos,
-            "leading_action": obs.greater_action, "finished": list(obs.finished),
-            "public_history": self.history.events[-32:],
-            "candidates": [{"candidate_id": n, "action": obs.actions[i]} for n, i in enumerate(indices)]}
+                "model": self.profile.model, "prompt_version": PROMPT_VERSION,
+                "request_attempted": False, "skipped": "唯一合法动作"})
+        candidates = [candidate_detail(obs, obs.actions[i], n, self.score(obs, obs.actions[i])[0])
+                      for n, i in enumerate(indices)]
+        context = build_context(obs, self.history, candidates)
         payload = {"model": self.profile.model, "stream": False, "max_tokens": 512,
             "response_format": {"type": "json_object"},
-            "messages": [{"role": "system", "content": "你是掼蛋团队策略。只根据本人手牌与公开信息，选择一个候选动作。优先团队争先，合理让队友保持牌权，避免无意义拆牌或浪费炸弹。不要生成牌。必须仅输出 JSON，例如 {\"candidate_id\": 0}。"},
+            "messages": [{"role": "system", "content": system_prompt(obs)},
                          {"role": "user", "content": json.dumps(context, ensure_ascii=False)}]}
-        meta = {"provider": self.profile.id, "model": self.profile.model, "prompt_version": "guandan-v1",
+        meta = {"provider": self.profile.id, "model": self.profile.model, "prompt_version": PROMPT_VERSION,
                 "candidate_count": len(indices), "request_attempted": self.profile.ready, "usage": {}, "estimated_cost": None}
         if self.profile.thinking is not None:
             payload["thinking"] = {"type": self.profile.thinking}
