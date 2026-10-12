@@ -24,6 +24,11 @@ def read_config(path):
 
 
 def main(argv=None):
+    # Redirected Windows consoles can default to cp1252; CLI output is UTF-8.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
     from .local_config import load_local_env
     load_local_env()
     parser = argparse.ArgumentParser(description="OpenGuanDan Python AI 实验台")

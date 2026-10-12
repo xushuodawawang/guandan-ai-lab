@@ -2,6 +2,8 @@ name: tests
 on: [push, pull_request]
 permissions:
   contents: read
+env:
+  PYTHONUTF8: "1"
 jobs:
   python:
     runs-on: ${{ matrix.os }}

@@ -7,7 +7,7 @@
 - Windows，Python 3.12.3，JDK 23.0.2。
 - 完整测试：39 项通过。
 - 覆盖两副牌重复数量、红桃级牌、四王炸、手牌分解、公开记牌守恒、交接归属、团队策略、异常回退、原始动作牌序、官方回合/接风契约、alpha-beta 与小树穷举值对照、进程终止及四个界面页面。
-- GitHub Actions 的 Windows/Linux 流程已配置，但本次没有推送，也没有宣称远端 CI 已运行。
+- 此处为最初本机验证记录；GitHub Actions 的 Windows/Linux 流程当时已配置，发布后的远端验证见本文末尾。
 
 ## 完整离线比赛
 
@@ -79,4 +79,11 @@ hybrid 对 MIT 开源 welkin03/guandan-ai 启发式适配版的一个配对：�
 - 首次短输出连接测试返回空内容；根据官方文档为牌桌调用显式关闭默认思考模式后，真实决策验证通过。空内容仍保留合法本地回退处理。
 - 页面已显示 DeepSeek 已配置，右侧对手设置为 DeepSeek，留有一席供朋友加入；未自动开启持续付费对局。
 - Compose 配置语法已验证。本机 Docker 引擎未运行，容器构建、公网发布、其他物理设备连接与完整 DeepSeek 胜率评测尚未实测。
+
+## Public GitHub 发布（2026-10-13）
+
+- 首次上传前检查了全部暂存文件，没有发现真实密钥或私人数据库，Markdown 本地链接均指向会公开的文件；API 密钥、私人检查点、原始运行目录和第三方下载运行时均被排除。
+- 公开仓库附有四张实际界面截图、架构 Mermaid 图、选定实际评测汇总和 SVG 图表。
+- 首次远端 Ubuntu 测试通过；Windows 下载步骤暴露默认 cp1252 无法输出中文的问题。命令行改为 UTF-8 输出，CI 启用 UTF-8，并增加以 cp1252 重定向运行 `doctor` 的真实回归测试。本机完整 **74 项通过**。
+- 最新 Windows / Linux 运行状态见 [GitHub Actions](https://github.com/xushuodawawang/guandan-ai-lab/actions/workflows/tests.yml)。
 

@@ -6,6 +6,7 @@
 ![JDK 17+](https://img.shields.io/badge/JDK-17%2B-orange)
 ![HTML CSS JavaScript](https://img.shields.io/badge/Frontend-HTML%20%2F%20CSS%20%2F%20JS-gold)
 ![MIT](https://img.shields.io/badge/License-MIT-green)
+[![Windows / Linux 自动测试](https://github.com/xushuodawawang/guandan-ai-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/xushuodawawang/guandan-ai-lab/actions/workflows/tests.yml)
 
 ![掼蛋牌桌：原创牌面、完整点击区域、点数快选与公开出牌记录](docs/images/card-table.png)
 
@@ -182,7 +183,7 @@ flowchart TB
 
 | 本机开发验证 | 实际结果 | 解释 |
 |---|---|---|
-| 自动回归 | 73 项通过 | 包括规则、AI、WebSocket、隐私、恢复与模型异常处理 |
+| 自动回归 | 74 项通过 | 包括规则、AI、WebSocket、隐私、恢复、模型异常与控制台编码处理 |
 | `hybrid` 对 `welkin` 适配版 | 1 个换队配对，2 场完整比赛，一胜一负 | 样本不足以推断稳定胜率；软预算超时如实记录 |
 | 官方服务器四 AI 比赛 | 9 个小局、703 次决策，0 异常回退 | 一次线上完整比赛，未控制发牌，不能当作同牌配对 |
 | DeepSeek 真实接口 | 1 次合法掼蛋决策，无回退，1,201 tokens | 证明接口与候选选择链路可用，未完成棋力评测 |
