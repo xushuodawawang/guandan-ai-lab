@@ -1,0 +1,15 @@
+name: guandan-ai
+services:
+  game:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8502:8502"
+      - "8503:8503"
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+      DEEPSEEK_TIMEOUT: ${DEEPSEEK_TIMEOUT:-12}
+      GUANDAN_PUBLIC_WS_URL: ${GUANDAN_PUBLIC_WS_URL:-}
+    volumes:
+      - ./data/server:/app/data/server

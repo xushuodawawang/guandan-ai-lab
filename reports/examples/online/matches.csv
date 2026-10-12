@@ -1,0 +1,2 @@
+﻿seed,swap,team_a,strategy_a,strategy_b,mode,status,winner,a_score,result_basis,episodes,steps,fallbacks,over_budget,mean_ms,p95_ms,elapsed_sec,error,log
+1,False,0,hybrid,greedy,match,finished,0,1.0,official victory,9,703,0,0,7.8838610241299225,50.64370000036433,10.00106167793274,,data\runs\online-final\seat-0.jsonl

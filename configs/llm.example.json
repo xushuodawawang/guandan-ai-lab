@@ -1,0 +1,16 @@
+{
+  "profiles": [
+    {
+      "id": "deepseek",
+      "label": "DeepSeek",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-flash",
+      "key_env": "DEEPSEEK_API_KEY",
+      "timeout": 12,
+      "candidates": 24,
+      "thinking": "disabled",
+      "input_price_per_million": null,
+      "output_price_per_million": null
+    }
+  ]
+}

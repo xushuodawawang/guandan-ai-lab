@@ -1,0 +1,6 @@
+websockets>=15,<18
+streamlit>=1.40,<2
+pandas>=2,<3
+matplotlib>=3.8,<4
+pytest>=8,<10
+

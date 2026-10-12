@@ -1,0 +1,11 @@
+{
+  "structure": true,
+  "behavior": true,
+  "search": true,
+  "candidate_limit": 5,
+  "search_cards": 20,
+  "samples": 3,
+  "max_depth": 3,
+  "max_nodes": 450
+}
+

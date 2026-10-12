@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guandan-ai-lab"
+version = "0.1.0"
+description = "OpenGuanDan Python AI, paired evaluation and replay dashboard"
+requires-python = ">=3.11"
+dependencies = ["websockets>=15,<18", "streamlit>=1.40,<2", "pandas>=2,<3", "matplotlib>=3.8,<4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+guandan-ai = "guandan_ai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["guandan_ai*"]
+
+[tool.setuptools.package-data]
+guandan_ai = ["web/*.html", "web/*.css", "web/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: requires downloaded official rule engine and Java"]
+
