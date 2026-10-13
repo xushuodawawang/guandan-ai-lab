@@ -526,10 +526,11 @@ class RoomService:
                 obs = deepcopy(obs)
                 replay = [e["message"] for e in game.events if (e["kind"] == "begin" and e["recipient"] == obs.seat) or e["kind"] == "public_event"]
                 profile = profiles().get(name[4:]) if name.startswith("llm:") else None
+                from .worker import ProcessPolicy
                 future = self.pool.submit(self._decide, game, obs, name, replay)
                 future.add_done_callback(lambda _: self.capacity.release())
                 room.pending = {"future": future, "obs": obs, "turn_key": self._turn_key(room),
-                    "deadline": now + (profile.timeout+6 if profile else 5), "provider": profile.id if profile else None}
+                    "deadline": now + (profile.timeout+ProcessPolicy.STARTUP_TIMEOUT+1 if profile else 5), "provider": profile.id if profile else None}
 
     @staticmethod
     def _turn_key(room):

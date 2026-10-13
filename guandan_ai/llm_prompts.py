@@ -5,7 +5,7 @@ from .analysis import features
 from .cards import RANKS, rank_value, remove_cards
 from .models import action_cards, is_pass
 
-PROMPT_VERSION = "guandan-team-v2"
+PROMPT_VERSION = "guandan-team-v3"
 CONTROL_TYPES = ("Bomb", "StraightFlush", "FourKings")
 PATTERNS = {"PASS": "不出", "Single": "单张", "Pair": "对子", "Trips": "三张",
             "ThreeWithTwo": "三带二", "Straight": "顺子", "ThreePair": "三连对",
@@ -44,12 +44,16 @@ tribute/back是进贡/还贡阶段：只挑该阶段合法交接候选，比较�
 6. 炸弹是争夺牌权的资源，不是看到能炸就炸，也不是永远不用。用于抢关键牌权、阻止对手出完、掩护队友或组织连续收尾；四王炸尤其要考虑后续。
 7. 末局看剩余牌的可执行收尾与对手接牌压力：检查下一圈能否出掉尾张，避免只剩一张小散牌却没有控制手段。
 8. PASS只是行为信息，可能是让队友或保留资源，不能据此断言某人绝无大牌。未知牌属于谁不可知，公开剩余未见牌不是某个对手的手牌。
+9. 对手持有牌权且low_cost_follow_candidate_ids非空时，优先认真评估这些低成本合法跟牌；不能只因PASS容易或笼统“保留资源”而连续不出。
+   比较跟牌后剩余结构、控制资源和下一轮机会，必要时主动推进。队友持牌时仍可合理让牌，不能为了提高出牌次数强行压队友。
 
 【候选信息与输出】
 每个candidate附原始action、remaining_after、结构粗估、百搭消耗和拆牌标记。结构/本地评分是近似提示，不是精确最优解；
 “拆对子/拆三张”有时有利，应结合实际剩余手牌和团队局面，而不是盲目遵从标记。候选排序与编号也不代表必选顺序。
 在内部按“身份与阶段→直接收尾→团队牌权→对手危险→剩余结构→控制资源”比较候选。
-只输出一个JSON对象，且仅有candidate_id整数，例如 {"candidate_id":0}；这是格式示例，不是在推荐0。
+只输出一个JSON对象，candidate_id为候选整数，可附intent意图码：teammate_support配合队友、conserve_control保留控制、
+intercept_opponent拦截、improve_structure整理手牌、handover交接。选择PASS时务必说明意图，不能以编号顺序代替决策。
+格式例如 {"candidate_id":3,"intent":"improve_structure"}；这只是格式示例，不是在推荐3。
 不得输出牌列表、座位指令、解释段落、Markdown或新增候选，不得从历史动作编号复制本回合candidate_id。"""
 
 
@@ -120,6 +124,10 @@ def build_context(obs, history, candidates):
     leader = effective_leader(obs)
     opponents = [(obs.seat + 1) % 4, (obs.seat + 3) % 4]
     can_pass = obs.stage == "play" and any(is_pass(a) for a in obs.actions)
+    low_cost = [c["candidate_id"] for c in candidates if can_pass and not is_pass(c["action"])
+                and not c["uses_control_pattern"] and not c["wildcards_used"]
+                and not c["breaks_natural_bomb"] and not c["breaks_pair"] and not c["breaks_trips"]
+                and action_power(c["action"], obs.trump) <= 11]
     return {"seat": obs.seat, "teammate": obs.teammate, "opponents": opponents,
             "seat_roles": [{"seat": s, "role": "本人" if s == obs.seat else "队友" if s == obs.teammate else "对手",
                             "remaining": obs.rest[s]} for s in range(4)],
@@ -133,4 +141,5 @@ def build_context(obs, history, candidates):
             "remaining": list(obs.rest), "finished": list(obs.finished),
             "opponents_near_finish": [s for s in opponents if s not in obs.finished and 0 < obs.rest[s] <= 2],
             "teammate_finished": obs.rest[obs.teammate] == 0 or obs.teammate in obs.finished,
+            "low_cost_follow_candidate_ids": low_cost,
             "public_history": public_events(history), "candidates": candidates}

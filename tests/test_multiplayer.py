@@ -217,3 +217,25 @@ def test_single_player_pause_freezes_and_restores_clock(service):
     assert room.game.steps == 0 and service.snapshot(host)["turn_seconds"] == remaining
     cmd(service, host, "pause", paused=False)
     assert service.snapshot(host)["turn_seconds"] == pytest.approx(remaining)
+
+
+def test_model_turn_does_not_expire_before_startup_and_request_budgets(service, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "fixture-secret-key")
+    monkeypatch.setenv("DEEPSEEK_TIMEOUT", "45")
+    _, host, room = create(service)
+    cmd(service, host, "configure", seat=1, kind="llm:deepseek")
+    cmd(service, host, "start")
+    obs = room.game.observation()
+    index = next(i for i, action in enumerate(obs.actions) if action[0] == "Single")
+    cmd(service, host, "play", selected=[obs.hand.index(obs.actions[index][2][0])], action_index=index)
+    future = Future()
+    monkeypatch.setattr(service.pool, "submit", lambda *args: future)
+    service.test_clock.now += .1
+    service.tick()
+    assert room.pending
+    service.test_clock.now += 50
+    service.tick()
+    assert room.pending and room.game.steps == 1
+    service.test_clock.now += 20
+    service.tick()
+    assert room.pending is None and room.game.steps == 2

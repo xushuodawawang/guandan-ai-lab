@@ -42,6 +42,7 @@ def _worker(conn, name, seat, seed, config):
 
 
 class ProcessPolicy:
+    STARTUP_TIMEOUT = 20
     def __init__(self, name, seat, seed=0, config=None):
         self.name, self.seat, self.seed, self.config = name, seat, seed, config
         self.process = self.conn = None
@@ -57,7 +58,7 @@ class ProcessPolicy:
         self.process = ctx.Process(target=_worker, args=(child, self.name, self.seat, self.seed, self.config), daemon=True)
         self.process.start()
         child.close()
-        if not self.conn.poll(20):
+        if not self.conn.poll(self.STARTUP_TIMEOUT):
             self.close()
             raise RuntimeError("策略子进程启动超时")
         ready = self.conn.recv()

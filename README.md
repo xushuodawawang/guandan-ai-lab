@@ -138,17 +138,19 @@ Copy-Item .env.example .env
 # 模板字段说明；API_KEY 的值请只填写在本地 .env 中。
 DEEPSEEK_API_KEY=
 DEEPSEEK_MODEL=deepseek-flash
-DEEPSEEK_TIMEOUT=12
-DEEPSEEK_THINKING=disabled
+DEEPSEEK_TIMEOUT=45
+DEEPSEEK_THINKING=enabled
+DEEPSEEK_REASONING_EFFORT=high
+DEEPSEEK_MAX_TOKENS=8192
 ```
 
-重启牌桌后，将一个空座位改成 **DeepSeek**，再开始对局。模型名称需与自己的账户支持列表一致；服务器默认关闭思考模式，让请求在有限回合时间内返回简短 JSON。[供应商思考模式文档](https://api-docs.deepseek.com/guides/thinking_mode/)
+重启牌桌后，将一个空座位改成 **DeepSeek**，再开始对局。模型名称需与自己的账户支持列表一致；默认开启高强度思考，请求上限45秒，推理和最终输出合计最多8192 tokens。返回较早就立即出牌，不会固定等满45秒。可设置 `DEEPSEEK_THINKING=disabled`、`DEEPSEEK_MAX_TOKENS=512` 切回快速模式。[供应商思考模式文档](https://api-docs.deepseek.com/api/create-chat-completion/)
 
 模型调用过程：官方引擎给出合法动作 → 本地策略排序与裁剪候选 → 发送该玩家自己的手牌及公开信息 → 模型返回 `{"candidate_id": 7}` → 检查编号、回合版本并执行原始合法动作。候选保留 PASS、可直接出完的动作和必要控制牌，默认最多 24 个。
 
 接口异常、超时、空内容、截断或非法编号会回退到本地合法策略。页面可以查看模型动作数、回退数、token 用量和耗时；没有配置单价时，费用显示未知。实际模型对局会产生供应商费用。
 
-内置 `guandan-team-v2` 提示词明确每个 Agent 的队友、对手与本回合职责，解释级牌/百搭/牌型和交接规则；候选会标注剩余手牌、拆对子/天然炸弹和百搭消耗。队友领先让牌、对手少牌拦截、领出送牌与末局收尾分别指导，详细内容与修改方法见 [内置模型提示词](docs/内置模型提示词.md)。
+内置 `guandan-team-v3` 提示词明确每个 Agent 的队友、对手与本回合职责，解释级牌/百搭/牌型和交接规则；候选会标注剩余手牌、拆对子/天然炸弹和百搭消耗。新增低成本跟牌指导，PASS 不再固定占候选首位，合法直接出完无需调用模型。不出统计区分唯一合法 PASS、队友持牌和对手持牌时主动不出，详细内容与修改方法见 [内置模型提示词](docs/内置模型提示词.md)。
 
 其他兼容 Chat Completions 接口可通过 [配置示例](configs/llm.example.json) 注册，密钥字段只接受环境变量名。详细字段、预算和模型 PK 命令见 [配置文档](docs/联机使用与模型配置.md)。
 
@@ -185,7 +187,7 @@ flowchart TB
 
 | 本机开发验证 | 实际结果 | 解释 |
 |---|---|---|
-| 自动回归 | 85 项通过 | 包括规则、AI、WebSocket、隐私、恢复、模型提示词与控制台编码处理 |
+| 自动回归 | 92 项通过 | 包括规则、AI、WebSocket、隐私、恢复、思考预算、模型提示词与控制台编码处理 |
 | `hybrid` 对 `welkin` 适配版 | 1 个换队配对，2 场完整比赛，一胜一负 | 样本不足以推断稳定胜率；软预算超时如实记录 |
 | 官方服务器四 AI 比赛 | 9 个小局、703 次决策，0 异常回退 | 一次线上完整比赛，未控制发牌，不能当作同牌配对 |
 | DeepSeek 真实接口 | 1 次合法掼蛋决策，无回退，1,201 tokens | 证明接口与候选选择链路可用，未完成棋力评测 |

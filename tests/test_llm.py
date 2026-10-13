@@ -24,7 +24,8 @@ def test_model_only_receives_private_self_hand_and_public_candidates(monkeypatch
         context = json.loads(payload["messages"][1]["content"])
         assert context["hand"] == observation().hand and context["seat"] == 1
         assert any(c["action"][0] == "PASS" for c in context["candidates"])
-        return {"choices": [{"finish_reason": "stop", "message": {"content": '{"candidate_id":0}'}}],
+        pass_id = next(c["candidate_id"] for c in context["candidates"] if c["action"][0] == "PASS")
+        return {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps({"candidate_id":pass_id})}}],
                 "usage": {"prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110}}
     decision = LLMPolicy(seat=1, profile=profile, transport=transport).decide(observation())
     assert decision.index == 0 and not decision.fallback
@@ -61,11 +62,15 @@ def test_unconfigured_provider_status_never_returns_key(monkeypatch):
     assert next(p for p in public_profiles() if p["id"] == "llm:deepseek")["ready"]
 
 
-def test_deepseek_short_game_calls_disable_thinking(monkeypatch):
+def test_deepseek_default_game_calls_allow_real_reasoning(monkeypatch):
     monkeypatch.delenv("DEEPSEEK_THINKING", raising=False)
+    for name in ("DEEPSEEK_MAX_TOKENS", "DEEPSEEK_REASONING_EFFORT", "DEEPSEEK_TIMEOUT"):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "fixture-secret-key")
     def transport(profile, payload, timeout):
-        assert payload["thinking"] == {"type": "disabled"}
+        assert payload["thinking"] == {"type": "enabled"}
+        assert payload["reasoning_effort"] == "high" and payload["max_tokens"] == 8192
+        assert 44 < timeout <= 45
         return {"choices": [{"finish_reason": "stop", "message": {"content": '{"candidate_id":0}'}}]}
     decision = LLMPolicy(seat=1, profile=profiles()["deepseek"], transport=transport).decide(observation())
     assert not decision.fallback

@@ -6,9 +6,11 @@
       "base_url": "https://api.deepseek.com",
       "model": "deepseek-flash",
       "key_env": "DEEPSEEK_API_KEY",
-      "timeout": 12,
+      "timeout": 45,
       "candidates": 24,
-      "thinking": "disabled",
+      "thinking": "enabled",
+      "reasoning_effort": "high",
+      "max_tokens": 8192,
       "input_price_per_million": null,
       "output_price_per_million": null
     }

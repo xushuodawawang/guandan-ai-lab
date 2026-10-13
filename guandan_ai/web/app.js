@@ -85,7 +85,10 @@ function renderControls() {
   $("step").hidden=!paused || human || !state?.active || state.round_over || !state?.room?.owner;
   $("step").disabled=busy;
   if(!state?.active) return;
-  $("turn-status").textContent=state.round_over ? "本副已结束" : state.autopilot ? "你已托管 · 可随时取消" : human ? state.stage==="play" ? "轮到你了" : "轮到你交接牌" : paused ? `${names[state.turn]} · 已暂停` : state.thinking ? `${names[state.turn]}正在思考…` : `等待${names[state.turn]}出牌`;
+  const actualTurn=state.room ? (state.room.your_seat+state.turn)%4 : -1;
+  const kind=state.room?.seats.find(s=>s.seat===actualTurn)?.kind;
+  const provider=(state.providers || []).find(p=>p.id===kind);
+  $("turn-status").textContent=state.round_over ? "本副已结束" : state.autopilot ? "你已托管 · 可随时取消" : human ? state.stage==="play" ? "轮到你了" : "轮到你交接牌" : paused ? `${names[state.turn]} · 已暂停` : state.thinking ? `${names[state.turn]}正在${provider?.thinking==="enabled" ? "深度" : ""}思考…${provider ? ` · 请求上限 ${provider.timeout_sec} 秒` : ""}` : `等待${names[state.turn]}出牌`;
   $("phase-tip").textContent=state.round_over ? "各家出牌会保留在桌面，可点开看详情" : !human ? "AI 依次出牌；轮到你时自动等待。可以切换慢速观察。" : state.stage==="tribute" ? "选一张平台允许的最大单牌进贡，红桃级牌不贡。" : state.stage==="back" ? "选一张不大于 10 且不是级牌的牌还贡。" : state.can_pass ? "你可以主动不出，也可以压牌；不出不需要选中任何牌。" : "本圈由你领出，必须出牌，不能不出。";
 }
 function renderHistory() {
@@ -236,9 +239,9 @@ function renderRoom(){
     $("ready").textContent=self.ready ? "取消准备" : "准备";
     $("ready").disabled=busy;$("room-start").hidden=!room.owner;
     $("room-start").disabled=busy || room.seats.some(s=>s.occupied&&!s.ready);
-    $("provider-note").textContent=(state.providers || []).map(p=>`${p.label}：${p.ready ? `已配置 · ${p.model}` : "服务器尚未配置密钥"}`).join("；")+"。模型失败或超时会使用本地 AI 回退。";
+    $("provider-note").textContent=(state.providers || []).map(p=>`${p.label}：${p.ready ? `已配置 · ${p.model} · ${p.thinking==="enabled" ? "深度思考" : "快速决策"} · 请求上限 ${p.timeout_sec} 秒` : "服务器尚未配置密钥"}`).join("；")+"。模型失败或超时会使用本地 AI 回退。";
   }
-  if(state.stats){const s=state.stats;$("model-stats-content").textContent=`总动作 ${s.decisions} · 回退 ${s.fallbacks} · 模型回合 ${s.model_decisions} · 已记录 tokens ${s.usage.total_tokens} · 模型平均 ${s.model_mean_ms===null ? "—" : Math.round(s.model_mean_ms)+"ms"} · P95 ${s.model_p95_ms===null ? "—" : Math.round(s.model_p95_ms)+"ms"} · 估算费用 ${s.estimated_cost===null ? "未配置价格" : s.estimated_cost.toFixed(6)}`;}
+  if(state.stats){const s=state.stats;$("model-stats-content").textContent=`总动作 ${s.decisions} · 回退 ${s.fallbacks} · 模型回合 ${s.model_decisions} · 已记录 tokens ${s.usage.total_tokens} · 推理 tokens ${s.reasoning_tokens ?? 0} · 新版不出统计：仅能不出 ${s.model_forced_passes ?? 0} / 队友持牌 ${s.model_teammate_passes ?? 0} / 对手持牌时主动不出 ${s.model_voluntary_passes ?? 0} · 模型平均 ${s.model_mean_ms===null ? "—" : Math.round(s.model_mean_ms)+"ms"} · P95 ${s.model_p95_ms===null ? "—" : Math.round(s.model_p95_ms)+"ms"} · 估算费用 ${s.estimated_cost===null ? "未配置价格" : s.estimated_cost.toFixed(6)}`;}
 }
 $("room-seats").addEventListener("change",event=>{const select=event.target.closest("[data-seat-kind]");if(select)command("configure",{seat:Number(select.dataset.seatKind),kind:select.value});});
 function connectSocket(url){
